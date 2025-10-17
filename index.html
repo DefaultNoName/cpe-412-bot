@@ -4,12 +4,13 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ESP32 Joystick + Line Trace</title>
+    <title>ESP32 Joystick (preserved layout)</title>
+
     <style>
+        /* Layout preserved: joystick left, controls right */
         body {
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-            margin: 0;
-            padding: 12px;
+            margin: 12px;
             background: #f6f7fb;
             color: #111
         }
@@ -19,20 +20,30 @@
             margin: 0 0 8px 0
         }
 
-        .row {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            margin-bottom: 12px
-        }
-
         .panel {
             background: #fff;
             padding: 12px;
             border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(10, 10, 20, 0.04)
+            box-shadow: 0 2px 8px rgba(10, 10, 20, 0.04);
         }
 
+        .container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .left {
+            width: 320px;
+        }
+
+        /* joystick area */
+        .right {
+            flex: 1;
+            min-width: 260px;
+        }
+
+        /* control area */
         #joystickWrap {
             width: 260px;
             height: 260px;
@@ -40,7 +51,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto
+            margin: 0 auto;
         }
 
         #pad {
@@ -66,11 +77,13 @@
 
         label {
             font-size: 13px;
-            color: #555
+            color: #555;
+            display: block;
+            margin-bottom: 6px;
         }
 
         input[type=range] {
-            width: 160px
+            width: 180px;
         }
 
         button {
@@ -79,96 +92,103 @@
             border: 0;
             background: #2b90ff;
             color: white;
-            font-weight: 600
+            font-weight: 600;
+            cursor: pointer;
         }
 
         #status {
             font-size: 13px;
-            color: #333
+            color: #333;
+            padding: 6px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-left: 8px;
+            background: #f0f8ff
         }
 
         #vals {
             font-family: monospace;
             color: #222;
-            font-size: 13px
+            font-size: 13px;
+            margin-top: 8px;
         }
 
         .small {
             font-size: 12px;
-            color: #666
+            color: #666;
         }
 
-        .toggle {
-            display: inline-flex;
+        .control-row {
+            display: flex;
+            gap: 12px;
             align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .col {
+            display: flex;
+            flex-direction: column;
             gap: 8px;
-        }
-
-        .toggle button {
-            background: #e0e0e0;
-            color: #111;
-        }
-
-        .toggle button.active {
-            background: #2b90ff;
-            color: #fff;
         }
     </style>
 </head>
 
 <body>
-    <div class="panel">
-        <div class="row">
-            <div>
-                <div id="joystickWrap">
-                    <div id="pad">
-                        <div id="knob" aria-hidden="true"></div>
-                    </div>
+    <h1>HTML Controller</h1>
+
+    <div class="panel container">
+        <div class="left">
+            <div id="joystickWrap">
+                <div id="pad">
+                    <div id="knob" aria-hidden="true"></div>
                 </div>
-                <div style="text-align:center; margin-top:8px" class="small">Drag the knob — vertical = forward/back,
-                    horizontal = turn</div>
             </div>
-            <div style="flex:1; min-width:200px;">
-                <div style="margin-bottom:8px">
-                    <label>WebSocket URL</label><br />
-                    <input id="wsUrl" type="text" value="ws://192.168.120.1/ws"
-                        style="width:100%; padding:6px; box-sizing:border-box" />
-                </div>
-                <div class="row">
-                    <button id="connectBtn">Connect</button>
-                    <div id="status" class="panel small" style="padding:8px">disconnected</div>
-                </div>
-
-                <div style="margin-top:12px">
-                    <label>Max speed: <span id="maxSpeedLbl">4095</span></label><br />
-                    <input id="maxSpeed" type="range" min="255" max="4095" step="1" value="4095">
-                </div>
-
-                <div style="margin-top:8px">
-                    <label>Deadzone (%) : <span id="deadLbl">6</span>%</label><br />
-                    <input id="deadzone" type="range" min="0" max="30" step="1" value="6">
-                </div>
-
-                <div style="margin-top:8px">
-                    <label>Send rate (ms):</label><br />
-                    <input id="sendRate" type="range" min="20" max="500" step="10" value="80"><span class="small"> <span
-                            id="rateLbl">80</span> ms</span>
-                </div>
-
-                <!-- NEW: Line-tracing toggle -->
-                <div style="margin-top:12px" class="toggle">
-                    <label>Line-tracing:</label>
-                    <button id="lineToggle">OFF</button>
-                    <div class="small" id="lineStatus">mode: manual</div>
-                </div>
-
-            </div>
+            <div style="text-align:center; margin-top:8px" class="small">Drag the knob — vertical = forward/back,
+                horizontal = turn</div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px">
-            <div id="vals" class="panel" style="padding:8px">L:0&nbsp;&nbsp;R:0</div>
-            <div class="small">Format: <code>"L,R\n"</code> &nbsp; Toggle format: <code>"MODE:LINE:1"</code> or
-                <code>"MODE:LINE:0"</code>
+        <div class="right">
+            <div class="panel">
+                <div class="control-row">
+                    <div style="flex:1">
+                        <label>WebSocket URL</label>
+                        <input id="wsUrl" type="text" value="" style="width:100%; padding:6px; box-sizing:border-box"
+                            placeholder="ws://192.168.120.1/ws" />
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+                        <button id="connectBtn">Connect</button>
+                        <div id="status">Disconnected</div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:12px; align-items:flex-start;">
+                    <div style="flex:1">
+                        <label>Max speed: <span id="maxSpeedLbl">255</span></label>
+                        <input id="maxSpeed" type="range" min="255" max="4095" step="1" value="255">
+                    </div>
+
+                    <div style="flex:2">
+                        <label>Deadzone (%) : <span id="deadLbl">6</span>%</label>
+                        <input id="deadzone" type="range" min="0" max="30" step="1" value="6">
+                    </div>
+                    <div style="flex:3">
+                        <label>Send rate (ms): <span id="rateLbl">60</span></label>
+                        <input id="sendRate" type="range" min="20" max="500" step="10" value="60">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:12px; align-items:center;">
+                    <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+                        <button id="modeBtn">Enable Line-Tracing</button>
+                    </div>
+                </div>
+
+                <div id="vals" style="margin-top:12px; padding:8px; border-radius:8px; background:#f9fbff;">
+                    L:0&nbsp;&nbsp;&nbsp;&nbsp;| R:0&nbsp;&nbsp;&nbsp;&nbsp;| Mode: MANUAL</div>
+                <div class="small" style="margin-top:8px">Message format: <code>"L,R\n"</code> Toggle format:
+                    <code>"MODE:LINE:1"</code> or <code>"MODE:LINE:0"</code>
+                </div>
             </div>
         </div>
     </div>
@@ -179,6 +199,7 @@
             const pad = document.getElementById('pad');
             const wsUrlInput = document.getElementById('wsUrl');
             const connectBtn = document.getElementById('connectBtn');
+            const modeBtn = document.getElementById('modeBtn');
             const statusDiv = document.getElementById('status');
             const maxSpeedInput = document.getElementById('maxSpeed');
             const maxSpeedLbl = document.getElementById('maxSpeedLbl');
@@ -188,21 +209,18 @@
             const rateLbl = document.getElementById('rateLbl');
             const vals = document.getElementById('vals');
 
-            const lineToggleBtn = document.getElementById('lineToggle');
-            const lineStatus = document.getElementById('lineStatus');
-
             let ws = null;
             let connected = false;
             let lineMode = false;
 
-            // joystick state: normalized -1..1
+            // Joystick state - normalized -1..1
             let joy = { x: 0, y: 0 };
-            let sendRate = parseInt(sendRateInput.value, 10);
             let lastSend = 0;
+            let sendRate = parseInt(sendRateInput.value, 10);
 
-            const PAD_RADIUS = 110; // px (half of pad size ~220)
-            const KNOB_RADIUS = 40; // px
-            const DEAD_PERCENT = () => parseInt(deadInput.value, 10) / 100.0; // fraction
+            const PAD_RADIUS = 110; // half pad size
+            const KNOB_RADIUS = 40;
+            const DEAD_PERCENT = () => parseInt(deadInput.value, 10) / 100.0;
             const MAX_INPUT = () => parseInt(maxSpeedInput.value, 10);
 
             function setStatus(text, ok = true) {
@@ -226,7 +244,7 @@
                 let dx = clientX - cx;
                 let dy = clientY - cy;
                 let nx = clamp(dx / (rect.width / 2 - KNOB_RADIUS), -1, 1);
-                let ny = clamp(-dy / (rect.height / 2 - KNOB_RADIUS), -1, 1); // invert y so up is +1
+                let ny = clamp(-dy / (rect.height / 2 - KNOB_RADIUS), -1, 1);
                 const dz = DEAD_PERCENT();
                 const mag = Math.sqrt(nx * nx + ny * ny);
                 if (mag < dz) { nx = 0; ny = 0; }
@@ -236,23 +254,9 @@
             }
 
             let dragging = false;
-            function startDrag(e) {
-                dragging = true;
-                const p = (e.touches && e.touches[0]) ? e.touches[0] : e;
-                setJoystickFromPoint(p.clientX, p.clientY);
-            }
-            function doDrag(e) {
-                if (!dragging) return;
-                e.preventDefault();
-                const p = (e.touches && e.touches[0]) ? e.touches[0] : e;
-                setJoystickFromPoint(p.clientX, p.clientY);
-            }
-            function stopDrag() {
-                dragging = false;
-                joy.x = 0; joy.y = 0;
-                updateKnobFromXY(0, 0);
-                sendMotors(true); // force final stop
-            }
+            function startDrag(e) { dragging = true; const p = (e.touches && e.touches[0]) ? e.touches[0] : e; setJoystickFromPoint(p.clientX, p.clientY); }
+            function doDrag(e) { if (!dragging) return; e.preventDefault(); const p = (e.touches && e.touches[0]) ? e.touches[0] : e; setJoystickFromPoint(p.clientX, p.clientY); }
+            function stopDrag() { dragging = false; joy.x = 0; joy.y = 0; updateKnobFromXY(0, 0); sendMotors(true); }
 
             pad.addEventListener('mousedown', startDrag);
             window.addEventListener('mousemove', doDrag);
@@ -262,12 +266,11 @@
             window.addEventListener('touchend', stopDrag);
 
             function mixToMotors(nx, ny) {
-                let v = ny; let w = nx;
+                let v = ny, w = nx;
                 let left = v + w;
                 let right = v - w;
                 const maxMag = Math.max(Math.abs(left), Math.abs(right), 1.0);
-                left /= maxMag;
-                right /= maxMag;
+                left /= maxMag; right /= maxMag;
                 return { left, right };
             }
 
@@ -276,87 +279,59 @@
                 if (!force && (now - lastSend) < sendRate) return;
                 lastSend = now;
                 if (!connected || !ws) return;
-                // If line mode is enabled, don't send joystick motor commands (optionally)
-                if (lineMode) return;
+                if (lineMode) return; // do not send manual commands while in line-tracing
                 const { left, right } = mixToMotors(joy.x, joy.y);
                 const maxv = MAX_INPUT();
                 const lInt = Math.round(left * maxv);
                 const rInt = Math.round(right * maxv);
                 const msg = `${lInt},${rInt}\n`;
                 ws.send(msg);
-                vals.textContent = `L:${lInt}  R:${rInt}`;
+                vals.textContent = `L:${lInt}  R:${rInt}` + (lineMode ? '  [LINE MODE]' : '');
             }
 
-            // send loop using requestAnimationFrame
-            function animator() {
-                sendMotors();
-                requestAnimationFrame(animator);
-            }
+            function animator() { sendMotors(); requestAnimationFrame(animator); }
             requestAnimationFrame(animator);
 
-            // WebSocket connect / handlers
             connectBtn.addEventListener('click', () => {
-                if (connected) { ws && ws.close(); return; }
-                const url = wsUrlInput.value.trim();
-                try {
-                    ws = new WebSocket(url);
-                } catch (err) {
-                    setStatus('Bad URL', false);
-                    return;
-                }
-                setStatus('connecting...');
-                ws.binaryType = 'arraybuffer';
-                ws.onopen = () => {
-                    connected = true;
-                    connectBtn.textContent = 'Disconnect';
-                    setStatus('connected');
-                    ws.send('HELLO\n');
-                };
-                ws.onclose = () => {
-                    connected = false;
-                    connectBtn.textContent = 'Connect';
-                    setStatus('disconnected', false);
-                };
-                ws.onerror = (e) => {
-                    setStatus('error', false);
-                };
+                if (connected) { ws.close(); return; }
+                const host = wsUrlInput.value.trim() || `ws://${location.hostname}/ws`;
+                try { ws = new WebSocket(host); } catch (e) { setStatus('Bad URL', false); return; }
+                setStatus('Connecting...');
+                ws.onopen = () => { connected = true; connectBtn.textContent = 'Disconnect'; setStatus('Connected'); ws.send('HELLO\n'); };
+                ws.onclose = () => { connected = false; connectBtn.textContent = 'Connect'; setStatus('Disconnected', false); };
+                ws.onerror = (e) => { setStatus('error', false); };
                 ws.onmessage = (ev) => {
-                    // Optionally show server replies (e.g., "OK" or mode ack)
-                    console.debug('server:', ev.data);
-                    if (typeof ev.data === 'string' && ev.data.startsWith('MODE:')) {
-                        // optional: server can confirm mode changes
+                    // handle server replies - if server echoes mode confirmations we update label
+                    const txt = (typeof ev.data === 'string') ? ev.data : '';
+                    if (txt.startsWith('MODE:LINE:OK') || txt.startsWith('MODE:LINE:1')) {
+                        lineMode = true;
+                        modeBtn.textContent = 'Disable Line-Tracing';
+                        vals.textContent = vals.textContent.split('Mode:')[0] + 'Mode: LINE';
+                    } else if (txt.startsWith('MODE:MANUAL:OK') || txt.startsWith('MODE:LINE:0')) {
+                        lineMode = false;
+                        modeBtn.textContent = 'Enable Line-Tracing';
+                        vals.textContent = vals.textContent.split('Mode:')[0] + 'Mode: MANUAL';
                     }
                 };
             });
 
-            // Line-tracing toggle button behavior
-            lineToggleBtn.addEventListener('click', () => {
-                if (!ws || !connected) {
-                    setStatus('Connect first', false);
-                    return;
-                }
+            modeBtn.addEventListener('click', () => {
+                if (!ws || ws.readyState !== WebSocket.OPEN) { alert('Open WebSocket first'); return; }
                 lineMode = !lineMode;
-                if (lineMode) {
-                    lineToggleBtn.classList.add('active');
-                    lineToggleBtn.textContent = 'ON';
-                    lineStatus.textContent = 'mode: line-trace';
-                    // tell server to enable line mode
-                    ws.send('MODE:LINE:1');
-                } else {
-                    lineToggleBtn.classList.remove('active');
-                    lineToggleBtn.textContent = 'OFF';
-                    lineStatus.textContent = 'mode: manual';
-                    ws.send('MODE:LINE:0');
-                }
+                modeBtn.textContent = lineMode ? 'Disable Line-Tracing' : 'Enable Line-Tracing';
+                const msg = lineMode ? 'MODE:LINE:1' : 'MODE:LINE:0';
+                ws.send(msg);
+                setStatus('Sent: ' + msg);
+                // reflect locally immediately
+                vals.textContent = vals.textContent.split('Mode:')[0] + (lineMode ? 'Mode: LINE' : 'Mode: MANUAL');
             });
 
-            maxSpeedInput.addEventListener('input', () => { maxSpeedLbl.textContent = maxSpeedInput.value; });
-            deadInput.addEventListener('input', () => { deadLbl.textContent = deadInput.value; });
+            maxSpeedInput.addEventListener('input', () => maxSpeedLbl.textContent = maxSpeedInput.value);
+            deadInput.addEventListener('input', () => deadLbl.textContent = deadInput.value);
             sendRateInput.addEventListener('input', () => { sendRate = parseInt(sendRateInput.value, 10); rateLbl.textContent = sendRateInput.value; });
 
-            // init
             updateKnobFromXY(0, 0);
-            setStatus('disconnected', false);
+            setStatus('Disconnected', false);
         })();
     </script>
 </body>

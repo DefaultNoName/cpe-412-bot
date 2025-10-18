@@ -32,6 +32,7 @@ void init_Motors()
     ledcAttachPin(PWMB, PWM_CH_B);
 
     digitalWrite(STBY, HIGH); // enable driver
+    Serial.println("Motors - Initialized");
 
     vTaskDelay(pdMS_TO_TICKS(250));
 }

@@ -15,15 +15,15 @@ static const uint8_t IR_SPEED = 255;         // 0..255 (user requested)
 static const float SEARCH_SPEED_FRAC = 0.50; // fraction of IR_SPEED when searching
 static const uint32_t INTERSECTION_STOP_MS = 150;
 static const uint32_t INTERSECTION_FORWARD_MS = 120;
-static const TickType_t TASK_SLEEP_MS = pdMS_TO_TICKS(20); // main loop ~50 Hz
+static const TickType_t TASK_SLEEP_MS = pdMS_TO_TICKS(30); // main loop ~50 Hz
 
 // lineTracingEnabled is defined in main.ino; declare it here for linkage
 extern volatile bool lineTracingEnabled;
 
 // start the FreeRTOS task that performs line tracing
-void startLineTracer();
+void start_Line_Tracer();
 
 // stop the task (optional) - not strictly required, provided for completeness
-void stopLineTracer();
+void stop_Line_Tracer();
 
 #endif // LINE_TRACING_H

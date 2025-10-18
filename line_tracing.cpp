@@ -8,7 +8,7 @@
 // Task handle so we can stop the task if needed
 static TaskHandle_t s_lineTracerTaskHandle = nullptr;
 
-static bool readIRDebounced(int pin)
+static bool read_IR_Debounced(int pin)
 {
     int count = 0;
     for (int i = 0; i < 3; ++i)
@@ -23,12 +23,12 @@ static bool readIRDebounced(int pin)
 }
 
 // helper: map 0..255 -> 0..PWM_MAX_INPUT (integer)
-static inline int32_t speed255_to_maxinput(uint8_t v255)
+static inline int32_t speed255_To_MaxInput(uint8_t v255)
 {
     return (int32_t)((uint32_t)v255 * (uint32_t)PWM_MAX_INPUT / 255U);
 }
 
-static void lineTracerTask(void *pv)
+static void line_Tracer_Task(void *pv)
 {
     // configure pins (use internal pull-ups where available)
     pinMode(IR_PIN_LEFT, INPUT_PULLUP);
@@ -49,9 +49,9 @@ static void lineTracerTask(void *pv)
         }
 
         // When enabled: run the control loop
-        bool L = readIRDebounced(IR_PIN_LEFT);
-        bool C = readIRDebounced(IR_PIN_CENTER);
-        bool R = readIRDebounced(IR_PIN_RIGHT);
+        bool L = read_IR_Debounced(IR_PIN_LEFT);
+        bool C = read_IR_Debounced(IR_PIN_CENTER);
+        bool R = read_IR_Debounced(IR_PIN_RIGHT);
 
         int sum = (int)L + (int)C + (int)R;
 
@@ -63,7 +63,7 @@ static void lineTracerTask(void *pv)
             movement_Control(1, 0);
             vTaskDelay(pdMS_TO_TICKS(INTERSECTION_STOP_MS));
 
-            int32_t forward = speed255_to_maxinput(IR_SPEED) / 2;
+            int32_t forward = speed255_To_MaxInput(IR_SPEED) / 2;
             movement_Control(0, (int16_t)forward);
             movement_Control(1, (int16_t)forward);
             vTaskDelay(pdMS_TO_TICKS(INTERSECTION_FORWARD_MS));
@@ -90,13 +90,13 @@ static void lineTracerTask(void *pv)
                 last_error_sign = -1;
 
             // compute wheel outputs
-            int32_t speedMax = speed255_to_maxinput(IR_SPEED);
+            int32_t speedMax = speed255_To_MaxInput(IR_SPEED);
             int32_t base = speedMax / 2;  // nominal forward baseline
             int32_t scale = speedMax / 2; // correction scale
 
-            float corr = error * (float)scale;
-            int32_t left = (int32_t)roundf((float)base + corr);
-            int32_t right = (int32_t)roundf((float)base - corr);
+            float correction = error * (float)scale;
+            int32_t left = (int32_t)roundf((float)base + correction);
+            int32_t right = (int32_t)roundf((float)base - correction);
 
             // clamp
             if (left < 0)
@@ -116,7 +116,7 @@ static void lineTracerTask(void *pv)
         }
 
         // Line lost -> search by rotating in place toward last known side
-        int32_t speedMax = speed255_to_maxinput(IR_SPEED);
+        int32_t speedMax = speed255_To_MaxInput(IR_SPEED);
         int32_t spin = (int32_t)roundf((float)speedMax * SEARCH_SPEED_FRAC);
 
         if (last_error_sign >= 0)
@@ -137,12 +137,12 @@ static void lineTracerTask(void *pv)
 }
 
 // start the task (call from setup)
-void startLineTracer()
+void start_Line_Tracer()
 {
     if (s_lineTracerTaskHandle != nullptr)
         return; // already running
     BaseType_t r = xTaskCreate(
-        lineTracerTask,
+        line_Tracer_Task,
         "LineTracer",
         4096, // stack (bytes vary by port; 4096 is usually safe)
         nullptr,
@@ -160,7 +160,7 @@ void startLineTracer()
     vTaskDelay(pdMS_TO_TICKS(250));
 }
 
-void stopLineTracer()
+void stop_Line_Tracer()
 {
     if (s_lineTracerTaskHandle == nullptr)
         return;

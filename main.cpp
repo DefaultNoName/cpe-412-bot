@@ -135,7 +135,7 @@ void http_Controller()
 void setup()
 {
   Serial.begin(115200);
-  setCpuFrequencyMhz(80);
+  setCpuFrequencyMhz(240);
   vTaskDelay(pdMS_TO_TICKS(250));
 
   // mount LittleFS (must succeed before serving files)
@@ -151,7 +151,7 @@ void setup()
   vTaskDelay(pdMS_TO_TICKS(250));
   init_Motors();
   vTaskDelay(pdMS_TO_TICKS(250));
-  startLineTracer();
+  start_Line_Tracer();
   vTaskDelay(pdMS_TO_TICKS(250));
   start_WiFi();
 }

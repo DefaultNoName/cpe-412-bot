@@ -162,19 +162,24 @@
                     </div>
                 </div>
 
-                <div style="display:flex; gap:12px; margin-top:12px; align-items:flex-start;">
+                <div style="display:flex; gap:12px; margin-top:12px; align-items:center;">
                     <div style="flex:1">
                         <label>Max speed: <span id="maxSpeedLbl">255</span></label>
                         <input id="maxSpeed" type="range" min="255" max="4095" step="1" value="255">
                     </div>
+                </div>
 
-                    <div style="flex:2">
-                        <label>Deadzone (%) : <span id="deadLbl">6</span>%</label>
-                        <input id="deadzone" type="range" min="0" max="30" step="1" value="6">
-                    </div>
-                    <div style="flex:3">
+                <div style="display:flex; gap:12px; margin-top:12px; align-items:center;">
+                    <div style="flex:1">
                         <label>Send rate (ms): <span id="rateLbl">60</span></label>
                         <input id="sendRate" type="range" min="20" max="500" step="10" value="60">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:12px; align-items:center;">
+                    <div style="flex:1">
+                        <label>Deadzone (%) : <span id="deadLbl">6</span>%</label>
+                        <input id="deadzone" type="range" min="0" max="30" step="1" value="6">
                     </div>
                 </div>
 
@@ -319,10 +324,9 @@
                 if (!ws || ws.readyState !== WebSocket.OPEN) { alert('Open WebSocket first'); return; }
                 lineMode = !lineMode;
                 modeBtn.textContent = lineMode ? 'Disable Line-Tracing' : 'Enable Line-Tracing';
-                const msg = lineMode ? 'MODE:LINE:1' : 'MODE:LINE:0';
+                const msg = lineMode ? 'MODE:LINE' : 'MODE:MANUAL';
                 ws.send(msg);
                 setStatus('Sent: ' + msg);
-                // reflect locally immediately
                 vals.textContent = vals.textContent.split('Mode:')[0] + (lineMode ? 'Mode: LINE' : 'Mode: MANUAL');
             });
 

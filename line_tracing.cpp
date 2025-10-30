@@ -1,13 +1,13 @@
-// line_tracer.cpp
+// line_tracing.cpp
 #include "line_tracing.h"
 #include "motor_control.h"
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
+#include <Arduino.h>
 
 // Task handle so we can stop the task if needed
 static TaskHandle_t s_lineTracerTaskHandle = nullptr;
 
+// Simple debounce read: sample 3 times and majority vote.
+// LM339 outputs are typically active-LOW (sink to GND), so LOW == line detected.
 static bool read_IR_Debounced(int pin)
 {
     int count = 0;
@@ -17,7 +17,6 @@ static bool read_IR_Debounced(int pin)
         if (v == LOW)
             ++count;
         vTaskDelay(pdMS_TO_TICKS(2));
-        ;
     }
     return (count >= 2);
 }
@@ -41,7 +40,7 @@ static void line_Tracer_Task(void *pv)
     while (true)
     {
         // If line tracing is disabled, sleep longer (but keep task alive)
-        if (!lineTracingEnabled)
+        if (!line_Tracing_Enabled)
         {
             // ensure motors are not driven by tracer while disabled
             vTaskDelay(pdMS_TO_TICKS(200));
@@ -70,7 +69,7 @@ static void line_Tracer_Task(void *pv)
 
             // reset last sign preference (prefer right by default)
             last_error_sign = 1;
-            // continue
+
             vTaskDelay(TASK_SLEEP_MS);
             continue;
         }
@@ -94,9 +93,9 @@ static void line_Tracer_Task(void *pv)
             int32_t base = speedMax / 2;  // nominal forward baseline
             int32_t scale = speedMax / 2; // correction scale
 
-            float correction = error * (float)scale;
-            int32_t left = (int32_t)roundf((float)base + correction);
-            int32_t right = (int32_t)roundf((float)base - correction);
+            float corr = error * (float)scale;
+            int32_t left = (int32_t)roundf((float)base + corr);
+            int32_t right = (int32_t)roundf((float)base - corr);
 
             // clamp
             if (left < 0)
@@ -133,7 +132,7 @@ static void line_Tracer_Task(void *pv)
         }
 
         vTaskDelay(TASK_SLEEP_MS);
-    }
+    } // while
 }
 
 // start the task (call from setup)

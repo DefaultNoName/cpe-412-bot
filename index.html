@@ -4,10 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ESP32 Joystick (preserved layout)</title>
-
+    <title>Robot Controller</title>
     <style>
-        /* Layout preserved: joystick left, controls right */
         body {
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
             margin: 12px;
@@ -37,44 +35,13 @@
             width: 320px;
         }
 
-        /* joystick area */
+        /* control area */
         .right {
             flex: 1;
-            min-width: 260px;
+            min-width: 320px;
         }
 
-        /* control area */
-        #joystickWrap {
-            width: 260px;
-            height: 260px;
-            touch-action: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-        }
-
-        #pad {
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            background: linear-gradient(180deg, #eee, #ddd);
-            position: relative;
-        }
-
-        #knob {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: #2b90ff;
-            transform: translate(-50%, -50%);
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            box-shadow: 0 6px 18px rgba(43, 144, 255, 0.25);
-            cursor: grab;
-        }
-
+        /* other controls */
         label {
             font-size: 13px;
             color: #555;
@@ -87,16 +54,16 @@
         }
 
         button {
-            padding: 8px 12px;
+            padding: 10px 14px;
             border-radius: 8px;
             border: 0;
             background: #2b90ff;
             color: white;
             font-weight: 600;
-            cursor: pointer;
+            cursor: pointer
         }
 
-        #status {
+        .status {
             font-size: 13px;
             color: #333;
             padding: 6px 8px;
@@ -104,13 +71,6 @@
             display: inline-block;
             margin-left: 8px;
             background: #f0f8ff
-        }
-
-        #vals {
-            font-family: monospace;
-            color: #222;
-            font-size: 13px;
-            margin-top: 8px;
         }
 
         .small {
@@ -125,10 +85,81 @@
             margin-bottom: 8px;
         }
 
-        .col {
+        .four-way {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(60px, 110px));
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .four-way .spacer {
+            width: 60px;
+            aspect-ratio: 1 / 1;
+            background: transparent;
+        }
+
+        .arrow {
+            width: 80px;
+            /* desired width; change as needed */
+            aspect-ratio: 1 / 1;
+            /* keeps button square regardless of height */
+            border-radius: 6px;
+            background: #e9f2ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 1000;
+        }
+
+        #btnStop.active {
+            background: #ff6666;
+            color: white;
+        }
+
+        .arrow.active {
+            background: #2b90ff;
+            color: white;
+        }
+
+        .speed-box {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .sendrate-box {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .arm-sliders {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .arm-col {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .arm-label {
+            font-size: 12px;
+            color: #333;
+        }
+
+        .arm-value {
+            font-family: monospace;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -138,13 +169,38 @@
 
     <div class="panel container">
         <div class="left">
-            <div id="joystickWrap">
-                <div id="pad">
-                    <div id="knob" aria-hidden="true"></div>
+            <div class="panel">
+                <div style="text-align:start; margin-left:68px; margin-bottom:8px;">
+                    <label>Drive Control (4-way)</label>
+                </div>
+
+                <div class="four-way">
+                    <div class="spacer"></div>
+                    <div id="btnUp" class="arrow">⮝</div>
+                    <div class="spacer"></div>
+
+                    <div id="btnLeft" class="arrow">⮜</div>
+                    <div id="btnStop" class="arrow">⬤ </div>
+
+                    <div id="btnRight" class="arrow">⮞</div>
+
+                    <div class="spacer"></div>
+                    <div id="btnDown" class="arrow">⮟</div>
+                    <div class="spacer"></div>
+                </div>
+
+                <div class="speed-box">
+                    <label style="min-width:140px">Speed (0-2047): <span id="speedLbl">2047</span></label>
+                    <input id="speedSlider" type="range" min="0" max="2047" step="1" value="2047">
+                </div>
+
+                <div style="margin-top:12px;" class="small">Use the arrows to command movement. Hold a button for
+                    continuous movement.
+                </div>
+                <div id="vals" style="margin-top:12px; padding:8px; border-radius:8px; background:#f9fbff;">
+                    L:0&nbsp;&nbsp;R:0&nbsp;&nbsp;Mode: MANUAL
                 </div>
             </div>
-            <div style="text-align:center; margin-top:8px" class="small">Drag the knob — vertical = forward/back,
-                horizontal = turn</div>
         </div>
 
         <div class="right">
@@ -152,151 +208,239 @@
                 <div class="control-row">
                     <div style="flex:1">
                         <label>WebSocket URL</label>
-                        <input id="wsUrl" type="text" value="" style="width:100%; padding:6px; box-sizing:border-box"
-                            placeholder="ws://192.168.120.1/ws" />
-                    </div>
-
-                    <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+                        <input id="wsUrl" type="text" value="" style="width:40%; padding:6px; box-sizing:border-box"
+                            placeholder="auto: ws://&lt;device&gt;/ws" />
                         <button id="connectBtn">Connect</button>
-                        <div id="status">Disconnected</div>
+                        <div id="status" class="status">Disconnected</div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:row; align-items:flex-start;">
+
                     </div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-top:12px; align-items:center;">
-                    <div style="flex:1">
-                        <label>Max speed: <span id="maxSpeedLbl">255</span></label>
-                        <input id="maxSpeed" type="range" min="255" max="4095" step="1" value="255">
+                    <div class="speed-box">
+                        <div style="flex:1">
+                            <label style="min-width:120px">Send Rate (ms): <span id="sendRateLbl">80</span></label>
+                            <input id="sendRate" type="range" min="40" max="500" step="10" value="80">
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; flex-direction:row; margin-top:12px; gap:8px; align-items:flex-start;">
+                    <button id="modeLineBtn">Enable Line-Tracing</button>
+                    <button id="modeArmBtn">Enable Arm/Claw</button>
+                </div>
+
+                <!-- Arm sliders -->
+                <div class="arm-sliders">
+                    <div class="arm-col">
+                        <div class="arm-label">Base<br /><span class="arm-value" id="valBase">90</span></div>
+                        <input id="sBase" type="range" min="0" max="180" value="90">
+                    </div>
+                    <div class="arm-col">
+                        <div class="arm-label">Up/Down<br /><span class="arm-value" id="valUp">90</span></div>
+                        <input id="sUp" type="range" min="0" max="180" value="90">
+                    </div>
+                    <div class="arm-col">
+                        <div class="arm-label">Back/Forth<br /><span class="arm-value" id="valBack">90</span></div>
+                        <input id="sBack" type="range" min="0" max="180" value="90">
+                    </div>
+                    <div class="arm-col">
+                        <div class="arm-label">Claw<br /><span class="arm-value" id="valClaw">90</span></div>
+                        <input id="sClaw" type="range" min="0" max="180" value="90">
                     </div>
                 </div>
 
-                <div style="display:flex; gap:12px; margin-top:12px; align-items:center;">
-                    <div style="flex:1">
-                        <label>Send rate (ms): <span id="rateLbl">60</span></label>
-                        <input id="sendRate" type="range" min="20" max="500" step="10" value="60">
-                    </div>
-                </div>
-
-                <div style="display:flex; gap:12px; margin-top:12px; align-items:center;">
-                    <div style="flex:1">
-                        <label>Deadzone (%) : <span id="deadLbl">6</span>%</label>
-                        <input id="deadzone" type="range" min="0" max="30" step="1" value="6">
-                    </div>
-                </div>
-
-                <div style="display:flex; gap:12px; margin-top:12px; align-items:center;">
-                    <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
-                        <button id="modeBtn">Enable Line-Tracing</button>
-                    </div>
-                </div>
-
-                <div id="vals" style="margin-top:12px; padding:8px; border-radius:8px; background:#f9fbff;">
-                    L:0&nbsp;&nbsp;&nbsp;&nbsp;| R:0&nbsp;&nbsp;&nbsp;&nbsp;| Mode: MANUAL</div>
-                <div class="small" style="margin-top:8px">Message format: <code>"L,R\n"</code> Toggle format:
-                    <code>"MODE:LINE:1"</code> or <code>"MODE:LINE:0"</code>
-                </div>
             </div>
         </div>
     </div>
 
     <script>
         (() => {
-            const knob = document.getElementById('knob');
-            const pad = document.getElementById('pad');
-            const wsUrlInput = document.getElementById('wsUrl');
+            // UI elements
             const connectBtn = document.getElementById('connectBtn');
-            const modeBtn = document.getElementById('modeBtn');
+            const wsUrlInput = document.getElementById('wsUrl');
             const statusDiv = document.getElementById('status');
-            const maxSpeedInput = document.getElementById('maxSpeed');
-            const maxSpeedLbl = document.getElementById('maxSpeedLbl');
-            const deadInput = document.getElementById('deadzone');
-            const deadLbl = document.getElementById('deadLbl');
             const sendRateInput = document.getElementById('sendRate');
-            const rateLbl = document.getElementById('rateLbl');
+
+            const sendRateSlider = document.getElementById('sendRate');
+            const sendRateLbl = document.getElementById('sendRateLbl');
             const vals = document.getElementById('vals');
+
+            const btnUp = document.getElementById('btnUp');
+            const btnDown = document.getElementById('btnDown');
+            const btnLeft = document.getElementById('btnLeft');
+            const btnRight = document.getElementById('btnRight');
+            const btnStop = document.getElementById('btnStop');
+
+            const speedSlider = document.getElementById('speedSlider');
+            const speedLbl = document.getElementById('speedLbl');
+
+            const sBase = document.getElementById('sBase');
+            const sUp = document.getElementById('sUp');
+            const sBack = document.getElementById('sBack');
+            const sClaw = document.getElementById('sClaw');
+            const valBase = document.getElementById('valBase');
+            const valUp = document.getElementById('valUp');
+            const valBack = document.getElementById('valBack');
+            const valClaw = document.getElementById('valClaw');
+
+            const modeLineBtn = document.getElementById('modeLineBtn');
+            const modeArmBtn = document.getElementById('modeArmBtn');
+
+            const stopBtn = document.getElementById('btnStop');
 
             let ws = null;
             let connected = false;
             let lineMode = false;
+            let armMode = false;
 
-            // Joystick state - normalized -1..1
-            let joy = { x: 0, y: 0 };
-            let lastSend = 0;
-            let sendRate = parseInt(sendRateInput.value, 10);
-
-            const PAD_RADIUS = 110; // half pad size
-            const KNOB_RADIUS = 40;
-            const DEAD_PERCENT = () => parseInt(deadInput.value, 10) / 100.0;
-            const MAX_INPUT = () => parseInt(maxSpeedInput.value, 10);
+            let holdTimer = null;
+            let holdAction = null;
+            let holdIntervalMs = 40;
 
             function setStatus(text, ok = true) {
                 statusDiv.textContent = text;
                 statusDiv.style.background = ok ? '#e8f7ff' : '#ffecec';
             }
 
-            function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-
-            function updateKnobFromXY(x, y) {
-                const px = (x * (PAD_RADIUS - KNOB_RADIUS)) + PAD_RADIUS;
-                const py = (-y * (PAD_RADIUS - KNOB_RADIUS)) + PAD_RADIUS;
-                knob.style.left = px + 'px';
-                knob.style.top = py + 'px';
-            }
-
-            function setJoystickFromPoint(clientX, clientY) {
-                const rect = pad.getBoundingClientRect();
-                const cx = rect.left + rect.width / 2;
-                const cy = rect.top + rect.height / 2;
-                let dx = clientX - cx;
-                let dy = clientY - cy;
-                let nx = clamp(dx / (rect.width / 2 - KNOB_RADIUS), -1, 1);
-                let ny = clamp(-dy / (rect.height / 2 - KNOB_RADIUS), -1, 1);
-                const dz = DEAD_PERCENT();
-                const mag = Math.sqrt(nx * nx + ny * ny);
-                if (mag < dz) { nx = 0; ny = 0; }
-                if (mag > 1) { nx /= mag; ny /= mag; }
-                joy.x = nx; joy.y = ny;
-                updateKnobFromXY(joy.x, joy.y);
-            }
-
-            let dragging = false;
-            function startDrag(e) { dragging = true; const p = (e.touches && e.touches[0]) ? e.touches[0] : e; setJoystickFromPoint(p.clientX, p.clientY); }
-            function doDrag(e) { if (!dragging) return; e.preventDefault(); const p = (e.touches && e.touches[0]) ? e.touches[0] : e; setJoystickFromPoint(p.clientX, p.clientY); }
-            function stopDrag() { dragging = false; joy.x = 0; joy.y = 0; updateKnobFromXY(0, 0); sendMotors(true); }
-
-            pad.addEventListener('mousedown', startDrag);
-            window.addEventListener('mousemove', doDrag);
-            window.addEventListener('mouseup', stopDrag);
-            pad.addEventListener('touchstart', startDrag, { passive: false });
-            window.addEventListener('touchmove', doDrag, { passive: false });
-            window.addEventListener('touchend', stopDrag);
-
-            function mixToMotors(nx, ny) {
-                let v = ny, w = nx;
-                let left = v + w;
-                let right = v - w;
-                const maxMag = Math.max(Math.abs(left), Math.abs(right), 1.0);
-                left /= maxMag; right /= maxMag;
-                return { left, right };
-            }
-
-            function sendMotors(force = false) {
-                const now = Date.now();
-                if (!force && (now - lastSend) < sendRate) return;
-                lastSend = now;
-                if (!connected || !ws) return;
-                if (lineMode) return; // do not send manual commands while in line-tracing
-                const { left, right } = mixToMotors(joy.x, joy.y);
-                const maxv = MAX_INPUT();
-                const lInt = Math.round(left * maxv);
-                const rInt = Math.round(right * maxv);
-                const msg = `${lInt},${rInt}\n`;
+            function sendWS(msg) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
                 ws.send(msg);
-                vals.textContent = `L:${lInt}  R:${rInt}` + (lineMode ? '  [LINE MODE]' : '');
             }
 
-            function animator() { sendMotors(); requestAnimationFrame(animator); }
-            requestAnimationFrame(animator);
+            // build and send left,right using 8-bit scale -255..255
+            function sendLR(left, right) {
+                sendWS(`${left},${right}\n`);
+                vals.textContent = `L:${left}  R:${right}` + (lineMode ? '  [LINE]' : (armMode ? '  [ARM]' : ''));
+            }
 
+            // ensure hold interval syncs with sendRate UI
+            function getHoldInterval() {
+                const v = parseInt(document.getElementById('sendRate').value, 10);
+                return (Number.isFinite(v) && v > 0) ? v : 80;
+            }
+
+            // start repeating an action while pressed
+            function startHold(action) {
+                // store action and current interval
+                holdAction = action;
+                holdIntervalMs = getHoldInterval();
+
+                // run immediately
+                try { action(); } catch (e) { console.error(e); }
+
+                // clear existing timer just in case
+                if (holdTimer) {
+                    clearInterval(holdTimer);
+                    holdTimer = null;
+                }
+
+                // start repeating at holdIntervalMs
+                holdTimer = setInterval(() => {
+                    // update interval dynamically if sendRate changed (optional)
+                    const newInterval = getHoldInterval();
+                    if (newInterval !== holdIntervalMs) {
+                        holdIntervalMs = newInterval;
+                        if (holdTimer) { clearInterval(holdTimer); holdTimer = setInterval(() => { try { holdAction(); } catch (e) { console.error(e); } }, holdIntervalMs); }
+                        return;
+                    }
+                    try { action(); } catch (e) { console.error(e); }
+                }, holdIntervalMs);
+            }
+
+            // stop repeating
+            function stopHold() {
+                if (holdTimer) {
+                    clearInterval(holdTimer);
+                    holdTimer = null;
+                }
+                holdAction = null;
+            }
+
+            function attachHold(elem, action) {
+                if (!elem) return;
+
+                // pointer events unify mouse/touch; fall back if not supported
+                const onPress = (ev) => {
+                    ev.preventDefault && ev.preventDefault();
+                    elem.classList.add('active');
+                    startHold(action);
+                };
+                const onRelease = (ev) => {
+                    elem.classList.remove('active');
+                    stopHold();
+                };
+
+                // Modern: pointer events (best)
+                if (window.PointerEvent) {
+                    elem.addEventListener('pointerdown', onPress);
+                    window.addEventListener('pointerup', onRelease);
+                    window.addEventListener('pointercancel', onRelease);
+                    // also stop on pointerleave so releasing outside stops repeat
+                    elem.addEventListener('pointerleave', (e) => {
+                        // if pointer is pressed and leaves element, stop the hold
+                        if (e.pressure > 0 || e.buttons) onRelease(e);
+                    });
+                } else {
+                    // Fallback: mouse + touch
+                    elem.addEventListener('mousedown', onPress);
+                    window.addEventListener('mouseup', onRelease);
+                    elem.addEventListener('touchstart', onPress, { passive: false });
+                    window.addEventListener('touchend', onRelease);
+                    window.addEventListener('touchcancel', onRelease);
+                }
+
+                // keyboard accessibility: space/enter to trigger a single press (and hold behavior if keydown)
+                elem.addEventListener('keydown', (e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                        elem.classList.add('active');
+                        startHold(action);
+                    }
+                });
+                elem.addEventListener('keyup', (e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                        elem.classList.remove('active');
+                        stopHold();
+                    }
+                });
+            }
+
+            // attach press/release events for buttons (mouse + touch)
+            function attachHold(el, action) {
+                el.addEventListener('mousedown', (e) => { e.preventDefault(); el.classList.add('active'); startHold(action); });
+                window.addEventListener('mouseup', () => { el.classList.remove('active'); stopHold(); });
+                el.addEventListener('touchstart', (e) => { e.preventDefault(); el.classList.add('active'); startHold(action); }, { passive: false });
+                window.addEventListener('touchend', () => { el.classList.remove('active'); stopHold(); });
+                // click fallback
+                el.addEventListener('click', () => { action(); });
+            }
+
+            attachHold(btnUp, () => driveForward(parseInt(speedSlider.value, 10)));
+            attachHold(btnDown, () => driveBack(parseInt(speedSlider.value, 10)));
+            attachHold(btnLeft, () => turnLeft(parseInt(speedSlider.value, 10)));
+            attachHold(btnRight, () => turnRight(parseInt(speedSlider.value, 10)));
+            attachHold(btnStop, () => stopMotors());
+
+            // speed UI
+            if (speedSlider && speedLbl) speedLbl.textContent = speedSlider.value;
+            speedSlider.addEventListener('input', () => {
+                speedLbl.textContent = speedSlider.value;
+            });
+
+            // initialize label with current slider value on load
+            if (sendRateLbl && sendRateInput) sendRateLbl.textContent = sendRateInput.value;
+
+            // Update label when slider changes and update holdInterval immediately
+            sendRateInput.addEventListener('input', () => {
+                if (sendRateLbl) sendRateLbl.textContent = sendRateInput.value;
+                // update holdInterval used by startHold (so hold uses the new rate immediately)
+                holdInterval = parseInt(sendRateInput.value, 10) || 80;
+            });
+
+
+            // connect WS
             connectBtn.addEventListener('click', () => {
                 if (connected) { ws.close(); return; }
                 const host = wsUrlInput.value.trim() || `ws://${location.hostname}/ws`;
@@ -306,35 +450,57 @@
                 ws.onclose = () => { connected = false; connectBtn.textContent = 'Connect'; setStatus('Disconnected', false); };
                 ws.onerror = (e) => { setStatus('error', false); };
                 ws.onmessage = (ev) => {
-                    // handle server replies - if server echoes mode confirmations we update label
                     const txt = (typeof ev.data === 'string') ? ev.data : '';
-                    if (txt.startsWith('MODE:LINE:OK') || txt.startsWith('MODE:LINE:1')) {
-                        lineMode = true;
-                        modeBtn.textContent = 'Disable Line-Tracing';
-                        vals.textContent = vals.textContent.split('Mode:')[0] + 'Mode: LINE';
-                    } else if (txt.startsWith('MODE:MANUAL:OK') || txt.startsWith('MODE:LINE:0')) {
-                        lineMode = false;
-                        modeBtn.textContent = 'Enable Line-Tracing';
-                        vals.textContent = vals.textContent.split('Mode:')[0] + 'Mode: MANUAL';
+                    if (txt.startsWith('MODE:LINE:1') || txt.startsWith('MODE:LINE:OK')) {
+                        lineMode = true; modeLineBtn.textContent = 'Disable Line-Tracing';
+                    } else if (txt.startsWith('MODE:LINE:0') || txt.startsWith('MODE:MANUAL:OK')) {
+                        lineMode = false; modeLineBtn.textContent = 'Enable Line-Tracing';
+                    } else if (txt.startsWith('MODE:ARM:1') || txt.startsWith('MODE:ARM:OK')) {
+                        armMode = true; modeArmBtn.textContent = 'Disable Arm';
+                    } else if (txt.startsWith('MODE:ARM:0') || txt.startsWith('MODE:ARM:OFF')) {
+                        armMode = false; modeArmBtn.textContent = 'Enable Arm';
                     }
                 };
             });
 
-            modeBtn.addEventListener('click', () => {
+            // Line and Arm toggles
+            modeLineBtn.addEventListener('click', () => {
                 if (!ws || ws.readyState !== WebSocket.OPEN) { alert('Open WebSocket first'); return; }
                 lineMode = !lineMode;
-                modeBtn.textContent = lineMode ? 'Disable Line-Tracing' : 'Enable Line-Tracing';
-                const msg = lineMode ? 'MODE:LINE' : 'MODE:MANUAL';
-                ws.send(msg);
-                setStatus('Sent: ' + msg);
-                vals.textContent = vals.textContent.split('Mode:')[0] + (lineMode ? 'Mode: LINE' : 'Mode: MANUAL');
+                modeLineBtn.textContent = lineMode ? 'Disable Line-Tracing' : 'Enable Line-Tracing';
+                const msg = lineMode ? 'MODE:LINE:1' : 'MODE:LINE:0';
+                sendWS(msg);
+                setStatus('sent ' + msg);
             });
 
-            maxSpeedInput.addEventListener('input', () => maxSpeedLbl.textContent = maxSpeedInput.value);
-            deadInput.addEventListener('input', () => deadLbl.textContent = deadInput.value);
-            sendRateInput.addEventListener('input', () => { sendRate = parseInt(sendRateInput.value, 10); rateLbl.textContent = sendRateInput.value; });
+            modeArmBtn.addEventListener('click', () => {
+                if (!ws || ws.readyState !== WebSocket.OPEN) { alert('Open WebSocket first'); return; }
+                armMode = !armMode;
+                modeArmBtn.textContent = armMode ? 'Disable Arm' : 'Enable Arm';
+                const msg = armMode ? 'MODE:ARM:1' : 'MODE:ARM:0';
+                sendWS(msg);
+                setStatus('sent ' + msg);
+                // immediate send of arm sliders when enabling
+                if (armMode) {
+                    const b = parseInt(sBase.value, 10), u = parseInt(sUp.value, 10), bk = parseInt(sBack.value, 10), c = parseInt(sClaw.value, 10);
+                    sendWS(`ARM:${b},${u},${bk},${c}\n`);
+                }
+            });
 
-            updateKnobFromXY(0, 0);
+            // Arm sliders: send immediately when changed (if arm mode enabled)
+            [sBase, sUp, sBack, sClaw].forEach(el => {
+                el.addEventListener('input', () => {
+                    valBase.textContent = sBase.value; valUp.textContent = sUp.value;
+                    valBack.textContent = sBack.value; valClaw.textContent = sClaw.value;
+                    if (armMode && ws && ws.readyState === WebSocket.OPEN) {
+                        const b = parseInt(sBase.value, 10), u = parseInt(sUp.value, 10), bk = parseInt(sBack.value, 10), c = parseInt(sClaw.value, 10);
+                        sendWS(`ARM:${b},${u},${bk},${c}\n`);
+                    }
+                });
+            });
+
+
+
             setStatus('Disconnected', false);
         })();
     </script>
